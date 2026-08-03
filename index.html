@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Ponto</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Calculadora de Ponto</h1>
+  <p class="subtitle">Preencha o que precisar — nenhum campo é obrigatório. Marque as opções que quiser usar.</p>
+
+  <div class="card">
+    <h2>Identificação</h2>
+    <div class="row">
+      <div class="field">
+        <label for="nomePonto">Nome do ponto / funcionário</label>
+        <input type="text" id="nomePonto" placeholder="Ex: Ludmila Johnston">
+      </div>
+      <div class="field">
+        <label for="mesRef">Mês de referência</label>
+        <input type="month" id="mesRef">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Opções avançadas</h2>
+    <div class="opts-grid">
+      <label class="opt"><input type="checkbox" id="optHideWeekend"> Não mostrar sábado e domingo</label>
+      <label class="opt"><input type="checkbox" id="optFormat24h" checked> Usar formato 24h (senão 12h AM/PM)</label>
+
+      <div style="grid-column:1/-1;">
+        <div class="opt" style="align-items:center;">Intervalo de almoço:</div>
+        <div class="opt-sub" style="margin-left:0;gap:20px;">
+          <label class="opt" style="padding:0;"><input type="radio" name="breakMode" id="breakModeNone" value="none"> Sem intervalo</label>
+          <label class="opt" style="padding:0;"><input type="radio" name="breakMode" id="breakModePerDay" value="perday" checked> Um por dia</label>
+          <label class="opt" style="padding:0;"><input type="radio" name="breakMode" id="breakModeGlobal" value="global"> Único para o mês</label>
+        </div>
+        <div class="opt-sub" id="globalBreakFields" style="display:none;">
+          <div class="field"><label>Início do intervalo</label><input type="time" id="globalBreakStart" value="12:00"></div>
+          <div class="field"><label>Fim do intervalo</label><input type="time" id="globalBreakEnd" value="13:00"></div>
+        </div>
+      </div>
+
+      <div>
+        <label class="opt"><input type="checkbox" id="optNote"> Adicionar nota personalizada no PDF</label>
+        <div class="opt-sub" id="noteField" style="display:none;width:100%;">
+          <textarea id="notaTexto" placeholder="Ex: Ponto conferido e aprovado pelo gestor." style="width:100%;"></textarea>
+        </div>
+      </div>
+
+      <div>
+        <label class="opt"><input type="checkbox" id="optOvertime"> Calcular hora extra</label>
+        <div class="opt-sub" id="overtimeFields" style="display:none;">
+          <div class="field"><label>Extra após (h/dia)</label><input type="number" id="overtimeThreshold" value="8" min="0" step="0.5" style="width:80px;"></div>
+          <div class="field"><label>Multiplicador</label><input type="number" id="overtimeMultiplier" value="1.5" min="1" step="0.1" style="width:80px;"></div>
+        </div>
+      </div>
+
+      <div>
+        <label class="opt"><input type="checkbox" id="optPayment"> Calcular pagamento</label>
+        <div class="opt-sub" id="paymentFields" style="display:none;">
+          <div class="field"><label>Moeda</label><input type="text" id="moeda" value="R$" style="width:60px;"></div>
+          <div class="field"><label>Valor por hora</label><input type="number" id="valorHora" value="0" min="0" step="0.01" style="width:100px;"></div>
+        </div>
+      </div>
+
+      <div>
+        <label class="opt"><input type="checkbox" id="optBanco"> Calcular banco de horas / horas devidas</label>
+        <div class="opt-sub" id="bancoFields" style="display:none;">
+          <div class="field"><label>Carga horária esperada (h/dia útil)</label><input type="number" id="cargaHoraria" value="8" min="0" step="0.5" style="width:90px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Registro de horas</h2>
+    <div class="table-scroll">
+      <table id="tabelaPonto">
+        <thead id="theadPonto"></thead>
+        <tbody id="tbodyPonto"></tbody>
+      </table>
+    </div>
+
+    <div class="totals" id="totaisResumo"></div>
+  </div>
+
+  <div class="card">
+    <h2>Aparência do PDF</h2>
+    <div class="opt-sub" style="margin-left:0;gap:20px;">
+      <label class="opt" style="padding:0;"><input type="radio" name="paperStyle" id="paperLetterhead" value="letterhead" checked> Com folha timbrada da AYIO / SeuCartório</label>
+      <label class="opt" style="padding:0;"><input type="radio" name="paperStyle" id="paperWhite" value="white"> Folha branca (sem timbrado)</label>
+    </div>
+  </div>
+
+  <div class="btnrow">
+    <button class="btn-ghost" id="btnReiniciar">Reiniciar</button>
+    <button class="btn-primary" id="btnCalcular">Calcular</button>
+    <button class="btn-pdf" id="btnPdf">Salvar PDF</button>
+  </div>
+</div>
+
+
+<script src="script.js"></script>
+</body>
+</html>
