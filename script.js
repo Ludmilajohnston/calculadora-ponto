@@ -77,11 +77,11 @@ function buildTable(){
   const thead = el('theadPonto');
   const tbody = el('tbodyPonto');
 
-  let headCols = '<th>Dia</th><th>Feriado</th><th>Entrada</th>';
+  let headCols = '<th>Dia</th><th class="feriado-col">Feriado</th><th class="atestado-col">Atestado</th><th>Entrada</th>';
   if(breakMode === 'perday'){
     headCols += '<th>Saída almoço</th><th>Retorno almoço</th>';
   } else {
-    headCols += '<th>Intervalo</th><th>Início</th><th>Fim</th>';
+    headCols += '<th class="intervalo-col">Intervalo</th><th>Início</th><th>Fim</th>';
   }
   headCols += '<th>Saída</th><th>Horas</th>';
   if(overtime) headCols += '<th>Hora extra</th>';
@@ -107,6 +107,7 @@ function buildTable(){
 
     const prev = existing[d] || {};
     const isFeriado = !!prev.feriado;
+    const isAtestado = !!prev.atestado;
     const entrada = prev.entrada || '';
     const saidaAlmoco = prev.saidaAlmoco || '';
     const retornoAlmoco = prev.retornoAlmoco || '';
@@ -114,11 +115,14 @@ function buildTable(){
     const intervaloExc = !!prev.intervaloExc;
     const intInicio = prev.intInicio || '';
     const intFim = prev.intFim || '';
-    const dis = isFeriado ? 'disabled' : '';
-    const intDis = (isFeriado || !intervaloExc) ? 'disabled' : '';
+    const dis = (isFeriado || isAtestado) ? 'disabled' : '';
+    const intDis = (isFeriado || isAtestado || !intervaloExc) ? 'disabled' : '';
+    const disFeriadoCb = isAtestado ? 'disabled' : '';
+    const disAtestadoCb = isFeriado ? 'disabled' : '';
 
     let cols = `<td class="daycell">${String(d).padStart(2,'0')}<span class="wk">${DIAS_SEMANA[wk]}</span></td>`;
-    cols += `<td class="feriado-cell"><input type="checkbox" data-field="feriado" ${isFeriado?'checked':''}></td>`;
+    cols += `<td class="feriado-cell"><input type="checkbox" data-field="feriado" ${isFeriado?'checked':''} ${disFeriadoCb}></td>`;
+    cols += `<td class="atestado-cell"><input type="checkbox" data-field="atestado" ${isAtestado?'checked':''} ${disAtestadoCb}></td>`;
     cols += `<td><input type="time" value="${entrada}" data-field="entrada" ${dis}></td>`;
     if(breakMode === 'perday'){
       cols += `<td><input type="time" value="${saidaAlmoco}" data-field="saidaAlmoco" ${dis}></td>`;
@@ -133,7 +137,7 @@ function buildTable(){
     if(overtime) cols += `<td class="extra-cell" data-field="extra">00:00</td>`;
     if(banco) cols += `<td class="saldo-cell" data-field="saldo">00:00</td>`;
 
-    rows += `<tr data-day="${d}" class="${isWeekend?'weekend':''}${isFeriado?' holiday':''}">${cols}</tr>`;
+    rows += `<tr data-day="${d}" class="${isWeekend?'weekend':''}${isFeriado?' holiday':''}${isAtestado?' sick':''}">${cols}</tr>`;
   }
   tbody.innerHTML = rows;
 
@@ -153,6 +157,33 @@ function buildTable(){
       if(intCb){
         intCb.disabled = cb.checked;
         if(cb.checked) intCb.checked = false;
+      }
+      const atCb = tr.querySelector('[data-field=atestado]');
+      if(atCb){
+        atCb.disabled = cb.checked;
+        if(cb.checked) atCb.checked = false;
+      }
+      calcular();
+    });
+  });
+
+  tbody.querySelectorAll('[data-field=atestado]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const tr = cb.closest('tr');
+      tr.classList.toggle('sick', cb.checked);
+      tr.querySelectorAll('input[type=time]').forEach(inp=>{
+        inp.disabled = cb.checked;
+        if(cb.checked) inp.value = '';
+      });
+      const intCb = tr.querySelector('[data-field=intervaloExc]');
+      if(intCb){
+        intCb.disabled = cb.checked;
+        if(cb.checked) intCb.checked = false;
+      }
+      const ferCb = tr.querySelector('[data-field=feriado]');
+      if(ferCb){
+        ferCb.disabled = cb.checked;
+        if(cb.checked) ferCb.checked = false;
       }
       calcular();
     });
@@ -190,8 +221,9 @@ function calcular(){
 
   document.querySelectorAll('#tbodyPonto tr').forEach(tr=>{
     const isFeriado = tr.querySelector('[data-field=feriado]').checked;
-    if(isFeriado){
-      tr.querySelector('[data-field=horas]').textContent = 'Feriado';
+    const isAtestado = tr.querySelector('[data-field=atestado]').checked;
+    if(isFeriado || isAtestado){
+      tr.querySelector('[data-field=horas]').textContent = isFeriado ? 'Feriado' : 'Atestado';
       const extraCell = tr.querySelector('[data-field=extra]');
       if(extraCell) extraCell.textContent = '—';
       const saldoCell = tr.querySelector('[data-field=saldo]');
@@ -325,6 +357,7 @@ el('btnPdf').addEventListener('click', async ()=>{
 
   const tableClone = document.getElementById('tabelaPonto').cloneNode(true);
   tableClone.style.width = '100%';
+  tableClone.querySelectorAll('.feriado-col, .feriado-cell, .atestado-col, .atestado-cell, .intervalo-col, .intervalo-cell').forEach(el => el.remove());
   printArea.appendChild(tableClone);
 
   const totalsClone = document.getElementById('totaisResumo').cloneNode(true);
