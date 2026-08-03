@@ -295,7 +295,8 @@ function calcular(){
 
     let regular = worked, extra = 0;
     if(overtime){
-      const thresholdMin = threshold * 60;
+      const isProvaRow = tr.classList.contains('examday');
+      const thresholdMin = isProvaRow ? 180 : threshold * 60;
       regular = Math.min(worked, thresholdMin);
       extra = Math.max(0, worked - thresholdMin);
       const extraCell = tr.querySelector('[data-field=extra]');
