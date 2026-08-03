@@ -80,6 +80,8 @@ function buildTable(){
   let headCols = '<th>Dia</th><th>Feriado</th><th>Entrada</th>';
   if(breakMode === 'perday'){
     headCols += '<th>Saída almoço</th><th>Retorno almoço</th>';
+  } else {
+    headCols += '<th>Intervalo</th><th>Início</th><th>Fim</th>';
   }
   headCols += '<th>Saída</th><th>Horas</th>';
   if(overtime) headCols += '<th>Hora extra</th>';
@@ -89,12 +91,11 @@ function buildTable(){
   const existing = {};
   tbody.querySelectorAll('tr').forEach(tr=>{
     const day = tr.dataset.day;
-    const inputs = tr.querySelectorAll('input[type=time]');
-    const feriadoInput = tr.querySelector('[data-field=feriado]');
-    existing[day] = {
-      times: Array.from(inputs).map(i=>i.value),
-      feriado: feriadoInput ? feriadoInput.checked : false
-    };
+    const data = {};
+    tr.querySelectorAll('[data-field]').forEach(fieldEl=>{
+      data[fieldEl.dataset.field] = fieldEl.type === 'checkbox' ? fieldEl.checked : fieldEl.value;
+    });
+    existing[day] = data;
   });
 
   let rows = '';
@@ -104,18 +105,17 @@ function buildTable(){
     const isWeekend = (wk===0 || wk===6);
     if(hideWeekend && isWeekend) continue;
 
-    const prevData = existing[d] || {};
-    const prev = prevData.times || [];
-    const isFeriado = !!prevData.feriado;
-    let idx = 0;
-    const entrada = prev[idx++] || '';
-    let saidaAlmoco='', retornoAlmoco='';
-    if(breakMode === 'perday'){
-      saidaAlmoco = prev[idx++] || '';
-      retornoAlmoco = prev[idx++] || '';
-    }
-    const saida = prev[idx++] || '';
+    const prev = existing[d] || {};
+    const isFeriado = !!prev.feriado;
+    const entrada = prev.entrada || '';
+    const saidaAlmoco = prev.saidaAlmoco || '';
+    const retornoAlmoco = prev.retornoAlmoco || '';
+    const saida = prev.saida || '';
+    const intervaloExc = !!prev.intervaloExc;
+    const intInicio = prev.intInicio || '';
+    const intFim = prev.intFim || '';
     const dis = isFeriado ? 'disabled' : '';
+    const intDis = (isFeriado || !intervaloExc) ? 'disabled' : '';
 
     let cols = `<td class="daycell">${String(d).padStart(2,'0')}<span class="wk">${DIAS_SEMANA[wk]}</span></td>`;
     cols += `<td class="feriado-cell"><input type="checkbox" data-field="feriado" ${isFeriado?'checked':''}></td>`;
@@ -123,6 +123,10 @@ function buildTable(){
     if(breakMode === 'perday'){
       cols += `<td><input type="time" value="${saidaAlmoco}" data-field="saidaAlmoco" ${dis}></td>`;
       cols += `<td><input type="time" value="${retornoAlmoco}" data-field="retornoAlmoco" ${dis}></td>`;
+    } else {
+      cols += `<td class="intervalo-cell"><input type="checkbox" data-field="intervaloExc" ${intervaloExc?'checked':''} ${dis}></td>`;
+      cols += `<td><input type="time" value="${intInicio}" data-field="intInicio" ${intDis}></td>`;
+      cols += `<td><input type="time" value="${intFim}" data-field="intFim" ${intDis}></td>`;
     }
     cols += `<td><input type="time" value="${saida}" data-field="saida" ${dis}></td>`;
     cols += `<td class="hours-cell" data-field="horas">00:00</td>`;
@@ -144,6 +148,22 @@ function buildTable(){
       tr.querySelectorAll('input[type=time]').forEach(inp=>{
         inp.disabled = cb.checked;
         if(cb.checked) inp.value = '';
+      });
+      const intCb = tr.querySelector('[data-field=intervaloExc]');
+      if(intCb){
+        intCb.disabled = cb.checked;
+        if(cb.checked) intCb.checked = false;
+      }
+      calcular();
+    });
+  });
+
+  tbody.querySelectorAll('[data-field=intervaloExc]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const tr = cb.closest('tr');
+      tr.querySelectorAll('[data-field=intInicio],[data-field=intFim]').forEach(inp=>{
+        inp.disabled = !cb.checked;
+        if(!cb.checked) inp.value = '';
       });
       calcular();
     });
@@ -191,6 +211,15 @@ function calcular(){
       if(sa!=null && ra!=null && ra > sa) breakMin = ra - sa;
     }
     // breakMode === 'none' → breakMin permanece 0
+
+    if(breakMode !== 'perday'){
+      const intervaloExcInput = tr.querySelector('[data-field=intervaloExc]');
+      if(intervaloExcInput && intervaloExcInput.checked){
+        const iStart = timeToMinutes(tr.querySelector('[data-field=intInicio]').value);
+        const iEnd = timeToMinutes(tr.querySelector('[data-field=intFim]').value);
+        breakMin = (iStart!=null && iEnd!=null && iEnd > iStart) ? (iEnd - iStart) : 0;
+      }
+    }
 
     let worked = 0;
     if(entrada!=null && saida!=null){
