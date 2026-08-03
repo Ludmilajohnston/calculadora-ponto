@@ -12,6 +12,7 @@
     --danger:#C0503E;
     --violet:#7B6EA6;
     --sky:#2E86AB;
+    --green:#4F9D69;
   }
   *{box-sizing:border-box;}
   body{
@@ -125,10 +126,13 @@
   tbody tr.sick input{background:#F1EEF9;}
   tbody tr.examday td{background:#EAF3FA;}
   tbody tr.examday .hours-cell{color:var(--sky);}
+  tbody tr.compensated td{background:#EAF5EC;color:var(--green);}
+  tbody tr.compensated input{background:#EAF5EC;}
   input[type=time]:disabled{opacity:.5;cursor:not-allowed;}
   input[type=checkbox]:disabled{opacity:.4;cursor:not-allowed;}
   .feriado-cell input[type=checkbox]{width:16px;height:16px;accent-color:var(--amber);cursor:pointer;}
   .atestado-cell input[type=checkbox]{width:16px;height:16px;accent-color:var(--violet);cursor:pointer;}
+  .compensado-cell input[type=checkbox]{width:16px;height:16px;accent-color:var(--green);cursor:pointer;}
   .prova-cell input[type=checkbox]{width:16px;height:16px;accent-color:var(--sky);cursor:pointer;}
   .intervalo-cell input[type=checkbox]{width:16px;height:16px;accent-color:var(--teal);cursor:pointer;}
   .obs-cell{padding:5px 4px !important;}
