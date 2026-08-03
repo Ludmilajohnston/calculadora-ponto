@@ -77,7 +77,7 @@ function buildTable(){
   const thead = el('theadPonto');
   const tbody = el('tbodyPonto');
 
-  let headCols = '<th>Dia</th><th class="feriado-col">Feriado</th><th class="atestado-col">Atestado</th><th>Entrada</th>';
+  let headCols = '<th>Dia</th><th class="feriado-col">Feriado</th><th class="atestado-col">Atestado</th><th class="prova-col">Prova</th><th>Entrada</th>';
   if(breakMode === 'perday'){
     headCols += '<th>Saída almoço</th><th>Retorno almoço</th>';
   } else {
@@ -108,6 +108,7 @@ function buildTable(){
     const prev = existing[d] || {};
     const isFeriado = !!prev.feriado;
     const isAtestado = !!prev.atestado;
+    const isProva = !!prev.prova && !isFeriado && !isAtestado;
     const entrada = prev.entrada || '';
     const saidaAlmoco = prev.saidaAlmoco || '';
     const retornoAlmoco = prev.retornoAlmoco || '';
@@ -117,12 +118,14 @@ function buildTable(){
     const intFim = prev.intFim || '';
     const dis = (isFeriado || isAtestado) ? 'disabled' : '';
     const intDis = (isFeriado || isAtestado || !intervaloExc) ? 'disabled' : '';
-    const disFeriadoCb = isAtestado ? 'disabled' : '';
-    const disAtestadoCb = isFeriado ? 'disabled' : '';
+    const disFeriadoCb = (isAtestado || isProva) ? 'disabled' : '';
+    const disAtestadoCb = (isFeriado || isProva) ? 'disabled' : '';
+    const disProvaCb = (isFeriado || isAtestado) ? 'disabled' : '';
 
     let cols = `<td class="daycell">${String(d).padStart(2,'0')}<span class="wk">${DIAS_SEMANA[wk]}</span></td>`;
     cols += `<td class="feriado-cell"><input type="checkbox" data-field="feriado" ${isFeriado?'checked':''} ${disFeriadoCb}></td>`;
     cols += `<td class="atestado-cell"><input type="checkbox" data-field="atestado" ${isAtestado?'checked':''} ${disAtestadoCb}></td>`;
+    cols += `<td class="prova-cell"><input type="checkbox" data-field="prova" ${isProva?'checked':''} ${disProvaCb}></td>`;
     cols += `<td><input type="time" value="${entrada}" data-field="entrada" ${dis}></td>`;
     if(breakMode === 'perday'){
       cols += `<td><input type="time" value="${saidaAlmoco}" data-field="saidaAlmoco" ${dis}></td>`;
@@ -137,7 +140,7 @@ function buildTable(){
     if(overtime) cols += `<td class="extra-cell" data-field="extra">00:00</td>`;
     if(banco) cols += `<td class="saldo-cell" data-field="saldo">00:00</td>`;
 
-    rows += `<tr data-day="${d}" class="${isWeekend?'weekend':''}${isFeriado?' holiday':''}${isAtestado?' sick':''}">${cols}</tr>`;
+    rows += `<tr data-day="${d}" class="${isWeekend?'weekend':''}${isFeriado?' holiday':''}${isAtestado?' sick':''}${isProva?' examday':''}">${cols}</tr>`;
   }
   tbody.innerHTML = rows;
 
@@ -163,6 +166,11 @@ function buildTable(){
         atCb.disabled = cb.checked;
         if(cb.checked) atCb.checked = false;
       }
+      const provaCb = tr.querySelector('[data-field=prova]');
+      if(provaCb){
+        provaCb.disabled = cb.checked;
+        if(cb.checked){ provaCb.checked = false; tr.classList.remove('examday'); }
+      }
       calcular();
     });
   });
@@ -184,6 +192,29 @@ function buildTable(){
       if(ferCb){
         ferCb.disabled = cb.checked;
         if(cb.checked) ferCb.checked = false;
+      }
+      const provaCb = tr.querySelector('[data-field=prova]');
+      if(provaCb){
+        provaCb.disabled = cb.checked;
+        if(cb.checked){ provaCb.checked = false; tr.classList.remove('examday'); }
+      }
+      calcular();
+    });
+  });
+
+  tbody.querySelectorAll('[data-field=prova]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const tr = cb.closest('tr');
+      tr.classList.toggle('examday', cb.checked);
+      const ferCb = tr.querySelector('[data-field=feriado]');
+      if(ferCb){
+        ferCb.disabled = cb.checked;
+        if(cb.checked) ferCb.checked = false;
+      }
+      const atCb = tr.querySelector('[data-field=atestado]');
+      if(atCb){
+        atCb.disabled = cb.checked;
+        if(cb.checked) atCb.checked = false;
       }
       calcular();
     });
@@ -278,7 +309,8 @@ function calcular(){
     if(banco){
       const isWeekendRow = tr.classList.contains('weekend');
       const hasEntry = (entrada != null || saida != null);
-      const expectedMin = (!isWeekendRow && hasEntry) ? cargaHoraria * 60 : 0;
+      const isProva = tr.classList.contains('examday');
+      const expectedMin = (!isWeekendRow && hasEntry) ? (isProva ? 180 : cargaHoraria * 60) : 0;
       totalSaldoMin += (worked - expectedMin);
       const saldoCell = tr.querySelector('[data-field=saldo]');
       if(saldoCell) saldoCell.textContent = minutesToHHMM(worked - expectedMin);
@@ -357,7 +389,7 @@ el('btnPdf').addEventListener('click', async ()=>{
 
   const tableClone = document.getElementById('tabelaPonto').cloneNode(true);
   tableClone.style.width = '100%';
-  tableClone.querySelectorAll('.feriado-col, .feriado-cell, .atestado-col, .atestado-cell, .intervalo-col, .intervalo-cell').forEach(el => el.remove());
+  tableClone.querySelectorAll('.feriado-col, .feriado-cell, .atestado-col, .atestado-cell, .prova-col, .prova-cell, .intervalo-col, .intervalo-cell').forEach(el => el.remove());
   printArea.appendChild(tableClone);
 
   const totalsClone = document.getElementById('totaisResumo').cloneNode(true);
