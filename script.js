@@ -15,6 +15,10 @@ loadLetterhead();
 
 const el = id => document.getElementById(id);
 
+function escapeAttr(str){
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 function todayMonthValue(){
   const d = new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
@@ -86,6 +90,7 @@ function buildTable(){
   headCols += '<th>Saída</th><th>Horas</th>';
   if(overtime) headCols += '<th>Hora extra</th>';
   if(banco) headCols += '<th>Saldo</th>';
+  headCols += '<th>Observação</th>';
   thead.innerHTML = '<tr>'+headCols+'</tr>';
 
   const existing = {};
@@ -116,6 +121,7 @@ function buildTable(){
     const intervaloExc = !!prev.intervaloExc;
     const intInicio = prev.intInicio || '';
     const intFim = prev.intFim || '';
+    const obs = prev.obs || '';
     const dis = (isFeriado || isAtestado) ? 'disabled' : '';
     const intDis = (isFeriado || isAtestado || !intervaloExc) ? 'disabled' : '';
     const disFeriadoCb = (isAtestado || isProva) ? 'disabled' : '';
@@ -139,6 +145,7 @@ function buildTable(){
     cols += `<td class="hours-cell" data-field="horas">00:00</td>`;
     if(overtime) cols += `<td class="extra-cell" data-field="extra">00:00</td>`;
     if(banco) cols += `<td class="saldo-cell" data-field="saldo">00:00</td>`;
+    cols += `<td class="obs-cell"><input type="text" value="${escapeAttr(obs)}" data-field="obs" placeholder="Opcional"></td>`;
 
     rows += `<tr data-day="${d}" class="${isWeekend?'weekend':''}${isFeriado?' holiday':''}${isAtestado?' sick':''}${isProva?' examday':''}">${cols}</tr>`;
   }
