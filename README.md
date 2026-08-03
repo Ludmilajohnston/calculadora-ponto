@@ -39,9 +39,3 @@ Basta abrir o `index.html` em um navegador — não é necessário servidor nem 
 
 Geração de PDF via [jsPDF](https://github.com/parallax/jsPDF) e [html2canvas](https://github.com/niklasvh/html2canvas), carregados via CDN.
 
-## Publicando no GitHub Pages
-
-1. Faça o fork ou clone deste repositório (ou crie um novo com os 3 arquivos na raiz).
-2. Vá em **Settings > Pages**.
-3. Em "Source", selecione a branch `main`/`master` e a pasta `/ (root)`.
-4. Salve. Em alguns minutos o app estará disponível em `https://SEU-USUARIO.github.io/NOME-DO-REPO/`.
