@@ -77,7 +77,7 @@ function buildTable(){
   const thead = el('theadPonto');
   const tbody = el('tbodyPonto');
 
-  let headCols = '<th>Dia</th><th>Entrada</th>';
+  let headCols = '<th>Dia</th><th>Feriado</th><th>Entrada</th>';
   if(breakMode === 'perday'){
     headCols += '<th>Saída almoço</th><th>Retorno almoço</th>';
   }
@@ -90,7 +90,11 @@ function buildTable(){
   tbody.querySelectorAll('tr').forEach(tr=>{
     const day = tr.dataset.day;
     const inputs = tr.querySelectorAll('input[type=time]');
-    existing[day] = Array.from(inputs).map(i=>i.value);
+    const feriadoInput = tr.querySelector('[data-field=feriado]');
+    existing[day] = {
+      times: Array.from(inputs).map(i=>i.value),
+      feriado: feriadoInput ? feriadoInput.checked : false
+    };
   });
 
   let rows = '';
@@ -100,7 +104,9 @@ function buildTable(){
     const isWeekend = (wk===0 || wk===6);
     if(hideWeekend && isWeekend) continue;
 
-    const prev = existing[d] || [];
+    const prevData = existing[d] || {};
+    const prev = prevData.times || [];
+    const isFeriado = !!prevData.feriado;
     let idx = 0;
     const entrada = prev[idx++] || '';
     let saidaAlmoco='', retornoAlmoco='';
@@ -109,24 +115,38 @@ function buildTable(){
       retornoAlmoco = prev[idx++] || '';
     }
     const saida = prev[idx++] || '';
+    const dis = isFeriado ? 'disabled' : '';
 
     let cols = `<td class="daycell">${String(d).padStart(2,'0')}<span class="wk">${DIAS_SEMANA[wk]}</span></td>`;
-    cols += `<td><input type="time" value="${entrada}" data-field="entrada"></td>`;
+    cols += `<td class="feriado-cell"><input type="checkbox" data-field="feriado" ${isFeriado?'checked':''}></td>`;
+    cols += `<td><input type="time" value="${entrada}" data-field="entrada" ${dis}></td>`;
     if(breakMode === 'perday'){
-      cols += `<td><input type="time" value="${saidaAlmoco}" data-field="saidaAlmoco"></td>`;
-      cols += `<td><input type="time" value="${retornoAlmoco}" data-field="retornoAlmoco"></td>`;
+      cols += `<td><input type="time" value="${saidaAlmoco}" data-field="saidaAlmoco" ${dis}></td>`;
+      cols += `<td><input type="time" value="${retornoAlmoco}" data-field="retornoAlmoco" ${dis}></td>`;
     }
-    cols += `<td><input type="time" value="${saida}" data-field="saida"></td>`;
+    cols += `<td><input type="time" value="${saida}" data-field="saida" ${dis}></td>`;
     cols += `<td class="hours-cell" data-field="horas">00:00</td>`;
     if(overtime) cols += `<td class="extra-cell" data-field="extra">00:00</td>`;
     if(banco) cols += `<td class="saldo-cell" data-field="saldo">00:00</td>`;
 
-    rows += `<tr data-day="${d}" class="${isWeekend?'weekend':''}">${cols}</tr>`;
+    rows += `<tr data-day="${d}" class="${isWeekend?'weekend':''}${isFeriado?' holiday':''}">${cols}</tr>`;
   }
   tbody.innerHTML = rows;
 
   tbody.querySelectorAll('input[type=time]').forEach(inp=>{
     inp.addEventListener('change', calcular);
+  });
+
+  tbody.querySelectorAll('[data-field=feriado]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const tr = cb.closest('tr');
+      tr.classList.toggle('holiday', cb.checked);
+      tr.querySelectorAll('input[type=time]').forEach(inp=>{
+        inp.disabled = cb.checked;
+        if(cb.checked) inp.value = '';
+      });
+      calcular();
+    });
   });
 
   calcular();
@@ -149,6 +169,16 @@ function calcular(){
   let totalMin = 0, totalExtraMin = 0, totalRegularMin = 0, totalSaldoMin = 0;
 
   document.querySelectorAll('#tbodyPonto tr').forEach(tr=>{
+    const isFeriado = tr.querySelector('[data-field=feriado]').checked;
+    if(isFeriado){
+      tr.querySelector('[data-field=horas]').textContent = 'Feriado';
+      const extraCell = tr.querySelector('[data-field=extra]');
+      if(extraCell) extraCell.textContent = '—';
+      const saldoCell = tr.querySelector('[data-field=saldo]');
+      if(saldoCell) saldoCell.textContent = '00:00';
+      return;
+    }
+
     const entrada = timeToMinutes(tr.querySelector('[data-field=entrada]').value);
     const saida = timeToMinutes(tr.querySelector('[data-field=saida]').value);
     let breakMin = 0;
